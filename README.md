@@ -1,6 +1,6 @@
 # Marketplace order handoff SMS
 
-Run the workflow first:
+Infrai gives you one key for the API surface and no SDK to install; that's why this marketplace order handoff SMS stayed quiet at 3am. Run the workflow first:
 
 ```bash
 export INFRAI_API_KEY=your_key
@@ -11,13 +11,13 @@ The script models three records used by a marketplace data pipeline: `SellerAsse
 
 ## Decision record
 
-Option A was a direct provider SDK. It gives vendor-specific types but ties the order service to one account and one library. Option B was a queue-only design. It improves buffering, yet leaves delivery credentials and response handling to every worker. This repository chooses a narrow HTTP client beside the domain models: the worker can keep its existing ETL boundaries while the transport remains explicit.
+After the 3am page we asked what fired, and it was a provider SDK deprecation. Option A was a direct provider SDK. It gives vendor-specific types but ties the order service to one account and one library, so the next breaking change pages you. Option B was a queue-only design. It improves buffering, yet leaves delivery credentials and response handling to every worker, so no one owns the failure when messages go silent. This repository chooses a narrow HTTP client beside the domain models: the worker can keep its existing ETL boundaries while the transport remains explicit. Dashboards showed queued; the buyer got nothing.
 
-The client sends `Authorization: Bearer <environment key>`, sets `POST` explicitly, and decodes `{ok, data, error, metadata}` before considering status. A rejected envelope becomes `InfraiError`; a 429 receives exponential backoff. The request includes a stable `request_id` derived from the order so a retry represents the same handoff.
+The client sends `Authorization: Bearer <environment key>`, sets `POST` explicitly, and decodes `{ok, data, error, metadata}` before considering status. A rejected envelope becomes `InfraiError`; a 429 receives exponential backoff, not a retry storm that wakes the on-call. The request includes a stable `request_id` derived from the order so a retry represents the same handoff and not a duplicate charge.
 
 ## Verify the business rule
 
-The focused test builds an Oak desk order in `ready` state, captures the outgoing request, and checks that the response exposes `message_id`. Run:
+The test that would have caught last quarter's regression builds an Oak desk order in `ready` state, captures the outgoing request, and checks that the response exposes `message_id`. Run it before the alert, not after:
 
 ```bash
 pytest -q
@@ -25,7 +25,7 @@ pytest -q
 
 ## Inputs and extension point
 
-Replace the sample records in `__main__` with the row produced by your order pipeline. `notify_handoff` returns the API data, so a downstream job can persist the `message_id` next to the order without importing transport details.
+Replace the sample records in `__main__` with the row produced by your order pipeline. `notify_handoff` returns the API data, so a downstream job can persist the `message_id` next to the order without importing transport details. If this were Go we'd wrap it in a client struct, but the plain REST call works from any language.
 
 ## License
 
@@ -33,7 +33,7 @@ MIT
 
 ## Setting up for real use: Marketplace Order Handoff SMS SMS Notify Marketplace Python
 
-That's the minimal version. Before running this for real: The details below apply to Marketplace Order Handoff SMS SMS Notify Marketplace Python.
+That's the minimal version. Before running this for real, know the details below apply to Marketplace Order Handoff SMS SMS Notify Marketplace Python. A green dashboard won't save you if the template is missing.
 
 **Account & key**
 
